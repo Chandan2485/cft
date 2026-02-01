@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CFT Calculator</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("sw.js");
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #22c55e;
+            --danger: #ef4444;
+            --bg: linear-gradient(135deg, #6366f1, #22c55e);
+            --glass: rgba(255, 255, 255, 0.18);
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 420px;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border-radius: 22px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+
+        .piece {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+
+        .piece-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .remove {
+            background: none;
+            border: none;
+            color: #fecaca;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 8px;
+            display: block;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            outline: none;
+        }
+
+        select {
+            max-width: 80px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            border: none;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        .add {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .calc {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .result {
+            margin-top: 16px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .total {
+            font-size: 18px;
+            font-weight: 800;
+            color: #bbf7d0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app">
+        <h1>📦 CFT Calculator</h1>
+
+        <div id="pieces"></div>
+
+        <button class="btn add" onclick="addPiece()">➕ Add Piece</button>
+        <button class="btn calc" onclick="calculate()">Calculate</button>
+        <button class="btn calc" onclick="downloadPDF()">⬇️ Download PDF</button>
+
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        let count = 0;
+
+        function addPiece() {
+            count++;
+
+            const div = document.createElement("div");
+            div.className = "piece";
+            div.innerHTML = `
+    <div class="piece-header">
+      <span>Piece ${count}</span>
+      <button class="remove" onclick="this.closest('.piece').remove()">✕</button>
+    </div>
+
+    <label>Length</label>
+    <div class="row">
+      <input type="number" class="l">
+      <select class="lu"><option value="ft">Ft</option><option value="inch">In</option></select>
+    </div>
+
+    <label>Width</label>
+    <div class="row">
+      <input type="number" class="w">
+      <select class="wu"><option value="ft">Ft</option><option value="inch">In</option></select>
+    </div>
+
+    <label>Height</label>
+    <div class="row">
+      <input type="number" class="h">
+      <select class="hu"><option value="ft">Ft</option><option value="inch">In</option></select>
+    </div>
+
+    <label>No. of Pieces</label>
+    <input type="number" class="p">
+  `;
+
+            document.getElementById("pieces").appendChild(div);
+        }
+
+        function toFeet(v, u) {
+            return u === "inch" ? v / 12 : v;
+        }
+
+        function calculate() {
+            let total = 0;
+            let html = "";
+
+            document.querySelectorAll(".piece").forEach((p, i) => {
+                const l = p.querySelector(".l").value;
+                const w = p.querySelector(".w").value;
+                const h = p.querySelector(".h").value;
+                const n = p.querySelector(".p").value;
+
+                if (!l || !w || !h || !n) return;
+
+                const cft =
+                    toFeet(l, p.querySelector(".lu").value) *
+                    toFeet(w, p.querySelector(".wu").value) *
+                    toFeet(h, p.querySelector(".hu").value) *
+                    n;
+
+                total += cft;
+                html += `Piece ${i + 1}: ${cft.toFixed(2)} CFT<br>`;
+            });
+
+            document.getElementById("result").innerHTML =
+                html + `<div class="total">Total CFT: ${total.toFixed(2)}</div>`;
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            let totalCFT = 0;
+            const tableData = [];
+
+            document.querySelectorAll(".piece").forEach((p, i) => {
+                const l = p.querySelector(".l").value;
+                const w = p.querySelector(".w").value;
+                const h = p.querySelector(".h").value;
+                const qty = p.querySelector(".p").value;
+
+                if (!l || !w || !h || !qty) return;
+
+                const lu = p.querySelector(".lu").value;
+                const wu = p.querySelector(".wu").value;
+                const hu = p.querySelector(".hu").value;
+
+                const cft =
+                    toFeet(l, lu) *
+                    toFeet(w, wu) *
+                    toFeet(h, hu) *
+                    qty;
+
+                totalCFT += cft;
+
+                tableData.push([
+                    i + 1,
+                    `${l} ${lu}`,
+                    `${w} ${wu}`,
+                    `${h} ${hu}`,
+                    qty,
+                    cft.toFixed(2)
+                ]);
+            });
+
+            // Title
+            doc.setFontSize(16);
+            doc.text("CFT Calculator Report", 14, 15);
+
+            // Table
+            doc.autoTable({
+                startY: 22,
+                head: [["Piece", "Length", "Width", "Height", "Qty", "CFT"]],
+                body: tableData,
+                styles: { fontSize: 10 },
+                headStyles: { fillColor: [99, 102, 241] },
+                alternateRowStyles: { fillColor: [240, 240, 255] }
+            });
+
+            // Total
+            const finalY = doc.lastAutoTable.finalY || 22;
+            doc.setFontSize(13);
+            doc.text(`Total CFT: ${totalCFT.toFixed(2)}`, 14, finalY + 10);
+
+            doc.save("CFT_Table_Report.pdf");
+        }
+
+
+        addPiece();
+    </script>
+
+</body>
+
+</html>
