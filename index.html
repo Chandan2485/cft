@@ -144,13 +144,35 @@
             font-weight: 800;
             color: #bbf7d0;
         }
+
+        .page-toggle {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.18);
+            color: white;
+            border: none;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 9999;
+        }
+
+        .page-toggle:hover { transform: translateY(-2px); opacity: 0.95; }
     </style>
 </head>
 
 <body>
 
     <div class="app">
-        <h1>📦 CFT Calculator</h1>
+        <button id="pageToggle" class="page-toggle" title="Open Log">📦</button>
+        <h1>📦 Pieces CFT Calculator</h1>
 
         <div id="pieces"></div>
 
@@ -292,6 +314,14 @@
 
 
         addPiece();
+
+        // page toggle handler
+        const pageToggle = document.getElementById('pageToggle');
+        if (pageToggle) {
+            pageToggle.addEventListener('click', function() {
+                location.href = 'log.html';
+            });
+        }
     </script>
 
 </body>
