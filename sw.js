@@ -1,16 +1,13 @@
-const CACHE_NAME = "cft-pwa-v1";
+const CACHE_VERSION = "v2026-02-04"; // CHANGE EVERY DEPLOY
+const CACHE_NAME = `cft-pwa-${CACHE_VERSION}`;
 
 const FILES_TO_CACHE = [
   "./",
-  "./index.html",
-  "./manifest.json",
-  "./sw.js"
+  "./manifest.json"
+  // ❌ DO NOT cache index.html
 ];
 
 self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
-  );
   self.skipWaiting();
 });
 
@@ -31,6 +28,10 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(res => res || fetch(event.request))
+    fetch(event.request)
+      .then(response => {
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
